@@ -55,7 +55,9 @@ class Game():
         self.screen = pg.display.set_mode((width,height))
         pg.display.set_caption(title)
         self.clock = pg.time.Clock()
-        self.bg = pg.transform.scale(pg.image.load('jungle_bg.png'), (width,height))
+        self.bg = pg.transform.scale(pg.image.load('images/jungle_bg.png'), (width,height))
+        self.bgx = 0
+        self.bgx2 = self.bg.get_width()
         self.running = True
     
     def new(self):
@@ -72,13 +74,30 @@ class Game():
         self.run()
         
     def update(self):
+        # Update Sprites
         self.all_sprites.update()
         hits = pg.sprite.spritecollide(self.player, self.platforms, False)
         if hits:
             self.player.pos.y = hits[0].rect.top
             self.player.vel.y = 0
             self.player.rect.midbottom = self.player.pos
+            
+        # Update background
+        self.bgx -= self.player.vel.x  # Move both background images back
+        self.bgx2 -= self.player.vel.x
+
+        if self.bgx < -self.bg.get_width():  # If our bg is at the -width then reset its position
+            self.bgx = self.bg.get_width()
     
+        if self.bgx2 < -self.bg.get_width():
+            self.bgx2 = self.bg.get_width()
+            
+        if self.bgx > self.bg.get_width():
+            self.bgx = -self.bg.get_width()
+            
+        if self.bgx2 > self.bg.get_width():
+            self.bgx2 = -self.bg.get_width()
+        
     def events(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -87,7 +106,8 @@ class Game():
                 self.running = False
     
     def draw(self):
-        self.screen.blit(self.bg, (0,0))
+        self.screen.blit(self.bg, (self.bgx, 0))  # draws our first bg image
+        self.screen.blit(self.bg, (self.bgx2, 0))  # draws the seconf bg image
         self.all_sprites.draw(self.screen)
         pg.display.flip()
     
