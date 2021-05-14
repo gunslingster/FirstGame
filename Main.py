@@ -5,6 +5,6 @@ from Classes import *
 
 g = Game()
 while g.running:
-    g.new()
+    g.start_game()
 
 pg.quit()
