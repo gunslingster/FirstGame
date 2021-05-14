@@ -48,7 +48,21 @@ class Platform(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        
+class Camera():
+    def __init__(self, width, height):
+        self.camera = pg.Rect(0,0,width,height)
+        self.width = width
+        self.height = height
+         
+    def apply(self,entity):
+        return entity.rect.move(self.camera.topleft)
+    
+    def update(self, target):
+        x = -target.rect.x + width//2
+        y = -target.rect.y + height//2
+        self.camera = pg.Rect(x,y,self.width,self.height)
+
+
 class Game():
     def __init__(self):
         pg.init()
@@ -71,6 +85,7 @@ class Game():
         p2 = Platform(width / 2 - 50, height * 3 / 4, 100, 20)
         self.all_sprites.add(p2)
         self.platforms.add(p2)
+        self.camera = Camera(width,height)
         self.run()
         
     def update(self):
@@ -81,6 +96,8 @@ class Game():
             self.player.pos.y = hits[0].rect.top
             self.player.vel.y = 0
             self.player.rect.midbottom = self.player.pos
+        self.camera.update(self.player)
+
             
         # Update background
         self.bgx -= self.player.vel.x  # Move both background images back
@@ -108,7 +125,8 @@ class Game():
     def draw(self):
         self.screen.blit(self.bg, (self.bgx, 0))  # draws our first bg image
         self.screen.blit(self.bg, (self.bgx2, 0))  # draws the seconf bg image
-        self.all_sprites.draw(self.screen)
+        for sprite in self.all_sprites:
+            self.screen.blit(sprite.image, self.camera.apply(sprite))
         pg.display.flip()
     
     def run(self):

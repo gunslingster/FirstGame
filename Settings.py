@@ -4,6 +4,8 @@ title = "Platformer"
 width = 1200
 height = 800 
 fps = 60
+project_path = '/home/gunslingster/Desktop/python_projects/pygame_projects/first_game/FirstGame'
+
 
 # define colors
 white = (255, 255, 255)
