@@ -18,10 +18,10 @@ class Button(pg.sprite.Sprite):
         self.rect = self.textsurface.get_rect()
         self.rect.center = self.pos
         self.clicked = False
-        
+
     def draw(self, screen):
         screen.blit(self.textsurface, self.rect.topleft)
-        
+
     def events(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -29,8 +29,8 @@ class Button(pg.sprite.Sprite):
             if event.type == pg.MOUSEBUTTONDOWN:
                 if self.rect.collidepoint(event.pos):
                     self.clicked = True
-        
-    
+
+
 class Player(pg.sprite.Sprite):
     def __init__(self, size):
         super().__init__()
@@ -43,13 +43,13 @@ class Player(pg.sprite.Sprite):
         self.vel = vec(0,0)
         self.acc = vec(0,0)
         self.falling = False
-        
+
     def jump(self, force):
         if self.falling == False:
             vy = -int(math.sqrt(2*force/5))
             self.vel.y += vy
             self.falling = True
-        
+
     def update(self):
         # Gravity
         self.acc = vec(0,0.5)
@@ -60,20 +60,20 @@ class Player(pg.sprite.Sprite):
             self.acc.x = -0.5
         if keys[pg.K_UP]:
             self.jump(500)
-            
-                
+
+
         # Friction
         self.acc.x += self.vel.x * player_friction
-        
+
         # Equations of motion
         self.vel += self.acc
         self.pos += self.vel + 0.5 * self.acc
         self.rect.midbottom = self.pos
-        
+
     def display_position(self):
         textsurface = font1.render('Position: ' + str(int(self.pos.x)) + ',' + str(int(self.pos.y)), False, (0, 0, 0))
         return textsurface
-        
+
 class Platform(pg.sprite.Sprite):
     def __init__(self, x, y, w, h):
         pg.sprite.Sprite.__init__(self)
@@ -82,16 +82,16 @@ class Platform(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        
+
 class Camera():
     def __init__(self, width, height):
         self.camera = pg.Rect(0,0,width,height)
         self.width = width
         self.height = height
-         
+
     def apply(self,entity):
         return entity.rect.move(self.camera.topleft)
-    
+
     def update(self, target):
         x = -target.rect.x + width//2
         y = -target.rect.y + height//2
@@ -108,7 +108,7 @@ class Game():
         self.bgx = 0
         self.bgx2 = self.bg.get_width()
         self.running = True
-    
+
     def new(self):
         self.all_sprites = pg.sprite.Group()
         self.platforms = pg.sprite.Group()
@@ -122,7 +122,7 @@ class Game():
         self.platforms.add(p2)
         self.camera = Camera(width,height)
         self.run()
-        
+
     def update(self):
         # Update Sprites
         self.all_sprites.update()
@@ -134,39 +134,29 @@ class Game():
             self.player.falling = False
         self.camera.update(self.player)
 
-    def update2(self):
-        self.all_sprites.update()
-        hits = pg.sprite.spritecollide(self.player, self.platforms, False)
-        if hits:
-            for hit in hits:
-                # hit top of platform
-                if self.player.rect.bottom == hit.rect.top:
-                    pass
-                    
-            
         # Update background
         self.bgx -= self.player.vel.x  # Move both background images back
         self.bgx2 -= self.player.vel.x
 
         if self.bgx < -self.bg.get_width():  # If our bg is at the -width then reset its position
             self.bgx = self.bg.get_width()
-    
+
         if self.bgx2 < -self.bg.get_width():
             self.bgx2 = self.bg.get_width()
-            
+
         if self.bgx > self.bg.get_width():
             self.bgx = -self.bg.get_width()
-            
+
         if self.bgx2 > self.bg.get_width():
             self.bgx2 = -self.bg.get_width()
-        
+
     def events(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 if self.playing:
                     self.playing = False
                 self.running = False
-    
+
     def draw(self):
         self.screen.blit(self.bg, (self.bgx, 0))  # draws our first bg image
         self.screen.blit(self.bg, (self.bgx2, 0))  # draws the seconf bg image
@@ -174,7 +164,7 @@ class Game():
             self.screen.blit(sprite.image, self.camera.apply(sprite))
         self.screen.blit(self.player.display_position(), (0,0))
         pg.display.flip()
-    
+
     def run(self):
         self.playing = True
         while self.playing:
@@ -182,7 +172,7 @@ class Game():
             self.update()
             self.draw()
             self.clock.tick(fps)
-            
+
     def start_game(self):
         start_button = Button(text='START GAME', pos=(600,400))
         while start_button.clicked == False:
@@ -190,13 +180,13 @@ class Game():
             start_button.draw(self.screen)
             start_button.events()
             pg.display.flip()
-        self.new()            
-        
-                
-        
-        
-                
-        
+        self.new()
 
 
-    
+
+
+
+
+
+
+
