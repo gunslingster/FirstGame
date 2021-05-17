@@ -30,10 +30,10 @@ class Button(pg.sprite.Sprite):
                 if self.rect.collidepoint(event.pos):
                     self.clicked = True
 
-
 class Player(pg.sprite.Sprite):
     def __init__(self, size):
         super().__init__()
+        self.size = size
         self.image = pg.Surface(size)
         self.image.fill(red)
         self.image.set_colorkey(white)
@@ -50,26 +50,57 @@ class Player(pg.sprite.Sprite):
             self.vel.y += vy
             self.falling = True
 
-    def update(self):
+    def update(self,blocks):
         # Gravity
         self.acc = vec(0,0.5)
+        # Get input
         keys = pg.key.get_pressed()
-        if keys[pg.K_RIGHT]:
-            self.acc.x = 0.5
-        if keys[pg.K_LEFT]:
-            self.acc.x = -0.5
-        if keys[pg.K_UP]:
-            self.jump(500)
-
-
-        # Friction
-        self.acc.x += self.vel.x * player_friction
-
-        # Equations of motion
-        self.vel += self.acc
-        self.pos += self.vel + 0.5 * self.acc
-        self.rect.midbottom = self.pos
-
+        def updatex():
+            if keys[pg.K_RIGHT]:
+                self.acc.x = 0.5
+            if keys[pg.K_LEFT]:
+                self.acc.x = -0.5
+            # Friction
+            self.acc.x += self.vel.x * player_friction    
+             # Equations of motion
+            self.vel.x += self.acc.x
+            self.pos.x += self.vel.x + 0.5 * self.acc.x
+            self.rect.x = self.pos.x - self.size[0]//2
+            hit_list = pg.sprite.spritecollide(self,blocks,False)
+            for hit in hit_list:
+                if self.vel.x > 0:
+                    self.vel.x = 0
+                    self.acc.x = 0
+                    self.pos.x = hit.left - self.size[0]//2
+                    self.rect.right = hit.rect.left
+                if self.vel.x < 0:
+                    self.vel.x = 0
+                    self.acc.x = 0
+                    self.pos.x = hit.right + self.size[0]//2
+                    self.rect.left = hit.rect.right
+        def updatey():
+            if keys[pg.K_UP]:
+                self.jump(500)
+            # Equations of motion
+            self.vel.y += self.acc.y
+            self.pos.y += self.vel.y + 0.5 * self.acc.y
+            self.rect.bottom = self.pos.y
+            hit_list = pg.sprite.spritecollide(self,blocks,False)
+            for hit in hit_list:
+                if self.vel.y > 0:
+                    self.vel.y = 0
+                    self.acc.y = 0
+                    self.pos.y = hit.rect.top 
+                    self.rect.bottom = self.pos.y
+                    self.falling = False
+                if self.vel.y < 0:
+                    self.vel.y = 0
+                    self.acc.y = 0
+                    self.pos.y = hit.rect.bottom + self.size[1]
+                    self.rect.bottom = self.pos.y
+        updatex()
+        updatey()
+        
     def display_position(self):
         textsurface = font1.render('Position: ' + str(int(self.pos.x)) + ',' + str(int(self.pos.y)), False, (0, 0, 0))
         return textsurface
@@ -96,7 +127,6 @@ class Camera():
         x = -target.rect.x + width//2
         y = -target.rect.y + height//2
         self.camera = pg.Rect(x,y,self.width,self.height)
-
 
 class Game():
     def __init__(self):
@@ -125,13 +155,7 @@ class Game():
 
     def update(self):
         # Update Sprites
-        self.all_sprites.update()
-        hits = pg.sprite.spritecollide(self.player, self.platforms, False)
-        if hits:
-            self.player.pos.y = hits[0].rect.top
-            self.player.vel.y = 0
-            self.player.rect.midbottom = self.player.pos
-            self.player.falling = False
+        self.all_sprites.update(self.platforms)
         self.camera.update(self.player)
 
         # Update background
