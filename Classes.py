@@ -6,6 +6,12 @@ import os
 import math
 vec = pg.math.Vector2
 
+def round_down(num):
+    if num < 0:
+        return math.ceil(num)
+    else:
+        return math.floor(num)
+
 class Button(pg.sprite.Sprite):
     def __init__(self, pos=(100,100), size=(100,40), text='BUTTON', color=red, font=font1):
         super().__init__()
@@ -61,36 +67,37 @@ class Player(pg.sprite.Sprite):
             if keys[pg.K_LEFT]:
                 self.acc.x = -0.5
             # Friction
-            self.acc.x += self.vel.x * player_friction    
-             # Equations of motion
+            self.acc.x += self.vel.x * player_friction
+            # Equations of motion
             self.vel.x += self.acc.x
             self.pos.x += self.vel.x + 0.5 * self.acc.x
-            self.rect.x = self.pos.x - self.size[0]//2
-            hit_list = pg.sprite.spritecollide(self,blocks,False)
+            self.pos.x = self.pos.x
+            self.rect.midbottom = self.pos
+            hit_list = [hit for hit in blocks if self.rect.colliderect(hit.rect)]
             for hit in hit_list:
                 if self.vel.x > 0:
                     self.vel.x = 0
                     self.acc.x = 0
-                    self.pos.x = hit.left - self.size[0]//2
+                    self.pos.x = hit.rect.left - self.size[0]//2
                     self.rect.right = hit.rect.left
                 if self.vel.x < 0:
                     self.vel.x = 0
                     self.acc.x = 0
-                    self.pos.x = hit.right + self.size[0]//2
+                    self.pos.x = hit.rect.right + self.size[0]//2
                     self.rect.left = hit.rect.right
         def updatey():
             if keys[pg.K_UP]:
                 self.jump(500)
             # Equations of motion
             self.vel.y += self.acc.y
-            self.pos.y += self.vel.y + 0.5 * self.acc.y
-            self.rect.bottom = self.pos.y
+            self.pos.y += math.ceil(self.vel.y + 0.5 * self.acc.y)
+            self.rect.midbottom = self.pos
             hit_list = pg.sprite.spritecollide(self,blocks,False)
             for hit in hit_list:
                 if self.vel.y > 0:
                     self.vel.y = 0
                     self.acc.y = 0
-                    self.pos.y = hit.rect.top 
+                    self.pos.y = hit.rect.top
                     self.rect.bottom = self.pos.y
                     self.falling = False
                 if self.vel.y < 0:
@@ -100,7 +107,7 @@ class Player(pg.sprite.Sprite):
                     self.rect.bottom = self.pos.y
         updatex()
         updatey()
-        
+
     def display_position(self):
         textsurface = font1.render('Position: ' + str(int(self.pos.x)) + ',' + str(int(self.pos.y)), False, (0, 0, 0))
         return textsurface
@@ -150,6 +157,9 @@ class Game():
         p2 = Platform(width / 2 - 50, height * 3 / 4, 100, 20)
         self.all_sprites.add(p2)
         self.platforms.add(p2)
+        p3 = Platform(900, height-90,30,50)
+        self.all_sprites.add(p3)
+        self.platforms.add(p3)
         self.camera = Camera(width,height)
         self.run()
 
@@ -159,8 +169,8 @@ class Game():
         self.camera.update(self.player)
 
         # Update background
-        self.bgx -= self.player.vel.x  # Move both background images back
-        self.bgx2 -= self.player.vel.x
+        self.bgx -= round_down(self.player.vel.x)  # Move both background images back
+        self.bgx2 -= round_down(self.player.vel.x)
 
         if self.bgx < -self.bg.get_width():  # If our bg is at the -width then reset its position
             self.bgx = self.bg.get_width()

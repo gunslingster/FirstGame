@@ -5,7 +5,7 @@ font.init()
 
 title = "Platformer"
 width = 1200
-height = 800 
+height = 800
 fps = 60
 project_path = '/home/gunslingster/Desktop/python_projects/pygame_projects/first_game/FirstGame'
 
@@ -22,4 +22,5 @@ font1 = font.SysFont(None, 48)
 # Player settings
 player_acceleration = 0.5
 player_friction = -0.12
+
 
