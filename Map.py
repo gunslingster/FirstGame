@@ -1,12 +1,22 @@
-import pygame
+import pygame as pg
 import os
 from Settings import *
 
-pygame.init()
+pg.init()
 width = 1000
 height = 1000
-screen = pygame.display.set_mode((width,height))
+screen = pg.display.set_mode((width,height))
+test_map = 'Assets/Maps/map_01.txt'
+
 screen.fill((0,0,0))
+class Tile():
+    def __init__(self, image, tile_size):
+        self.image = pg.transform.scale(pg.image.load(image), (tile_size,tile_size))
+        self.tile_size = tile_size
+        self.rect = self.image.get_rect()
+    
+    def draw(self, screen, pos):
+        screen.blit(self.image, pos)
 
 class Map():
     def __init__(self, map_file, width, height):
@@ -15,6 +25,7 @@ class Map():
         self.height = height
         self.map = self.process_map()
         self.tile_size = self.width // len(self.map[0])
+        self.tile = Tile('Assets/Tiles/Tile_02.png', self.tile_size)
 
     def process_map(self):
         f = open(self.map_file, 'r+')
@@ -25,22 +36,10 @@ class Map():
         for i in range(len(self.map)):
             for j in range(len(self.map[0])):
                 if self.map[i][j] == 1:
-                    tile_rect = pygame.Rect(j*self.tile_size, i*self.tile_size, self.tile_size, self.tile_size)
-                    pygame.draw.rect(screen, (0,255,0), tile_rect)
+                    self.tile.draw(screen, (j*self.tile.tile_size, i*self.tile.tile_size))
 
-
-test = Map(os.path.join(project_path, "maps/maps.txt"), 1000, 1000)
-mymap = test.process_map()
+test = Map(test_map, 1000, 1000)
 test.generate_map()
-def main():
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-        pygame.display.flip()
-print(mymap)
-main()
-pygame.quit()
+pg.display.flip()
 
 
