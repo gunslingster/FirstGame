@@ -6,8 +6,8 @@ vec = pg.math.Vector2
 pg.init()
 
 # Setting up the window
-width = 1200
-height = 800
+width = 1280
+height = 640
 screen = pg.display.set_mode((width,height))
 
 # Setting some basic colors
@@ -16,8 +16,11 @@ white = (255,255,255)
 red = (255,0,0)
 green = (0,255,0)
 
+path = 'C:/Users/sabrahams/Desktop/pygame/FirstGame/Assets/Tiles'
+
 def get_tile_images(tile_size):
-    tile_directory = input('Enter tile directory: ')
+    #tile_directory = input('Enter tile directory: ')
+    tile_directory = path
     tile_images = []
     for tile_image in os.listdir(tile_directory):
         tile = pg.transform.scale(pg.image.load(os.path.join(tile_directory, tile_image)), (tile_size,tile_size))
@@ -31,36 +34,18 @@ class Tile():
         self.tile_pos = pos
         self.real_pos = (pos[0]*self.tile_size, pos[1]*tile_size)
         self.rect = self.image.get_rect()
-        self.rect.topleft = self.real_pos
-    
-class Platform(pg.sprite.Sprite):
-    """Form a platform by joining tiles together.
-    The platform can only be made up a single type of tile.
-    Size the the number of tiles.
-    The platform can have a velocity."""
-    def __init__(self, tile, size, pos, vel):
-        super().__init__()
-        self.tile = tile
-        self.tile_size = self.tile.get_width()
-        self.size = size
-        self.image = pg.Surface((self.tile_size*size, self.tile_size))
-        self.fill_image()
-        self.rect = self.image.get_rect()
-        self.rect.topleft = pos
-        self.pos = vec(pos)
-        self.vel = vec(vel)
-        
-    def fill_image(self):
-         for i in range(self.size):
-             self.image.blit(self.tile, (i*self.tile_size, 0))
+        self.rect.topleft = self.real_pos    
         
 class MapEditor():
-    def __init__(self, map_width=1000, map_height=1000, tile_size=32, tiles=None, background_image=None):
+    def __init__(self, map_width=30, map_height=20, map_size = 3, tile_size=32, tiles=None, bg=None):
         self.map_width = map_width
         self.map_height = map_height
+        self.map_size = map_size
         self.tile_size = tile_size
         self.tiles = tiles
-        self.background_image = background_image
+        self.bg = pg.transform.scale
+        self.create_level()
+        self.tile_clicked = None
 
     def generate_ui(self):
         self.ui_width = self.tile_size * 11
@@ -81,12 +66,22 @@ class MapEditor():
                     count += 1
                 else:
                     break
-
+    
+    def create_level(self):
+        self.level = pg.Surface((self.map_width*self.tile_size*self.map_size, self.map_height*self.tile_size))
+        self.level_info = []
+        cols = self.map_width*self.map_size
+        rows = self.map_height
+        for i in range(rows):
+            self.level_info.append([0]*cols)
+        
+            
 def main():
     running = True
     test = get_tile_images(32)
     m = MapEditor(tiles=test)
     m.generate_ui()
+    m.create_level()
     while running:
         events = pg.event.get()
         for event in events:
