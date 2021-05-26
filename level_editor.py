@@ -49,6 +49,7 @@ class MapEditor():
         self.tile_size = tile_size
         self.tiles = tiles
         self.bg = pg.transform.scale
+        self.generate_ui()
         self.create_level()
         self.tile_clicked = None
 
@@ -56,7 +57,7 @@ class MapEditor():
         self.ui_width = self.tile_size * 11
         self.ui_height = height
         self.ui_screen = pg.Surface((width,height))
-        self.ui_screen.fill(red)
+        self.ui_screen.fill(green)
         self.ui_screen.set_colorkey(white)
         self.tile_cols = 5
         self.tile_rows = math.ceil(len(self.tiles)/5)
@@ -65,21 +66,17 @@ class MapEditor():
         for i in range(self.tile_rows):
             for j in range(1,11,2):
                 if count < len(self.tiles):
-                    tile_button = TileButton((j*self.tile_size,i*self.tile_size), self.tiles[count])
+                    tile_button = ImageButton((width-self.ui_width+j*self.tile_size,i*self.tile_size), (self.tile_size, self.tile_size), self.tiles[count])
                     self.tile_buttons.append(tile_button)
                     count += 1
                 else:
                     break
-        print(self.tile_buttons)
-
-    def update_ui(self):
-        screen.blit(self.ui_screen, (width - self.ui_width, 0))
+    
+    def draw(self, screen):
+        screen.blit(self.ui_screen, (width-self.ui_width, 0))
         for button in self.tile_buttons:
-            button.update()
-            if self.tile_clicked is None:
-                self.tile_clicked = button.action()
-            button.draw(self.ui_screen)
-
+            button.draw(screen)
+    
     def create_level(self):
         self.level = pg.Surface((self.map_width*self.tile_size*self.map_size, self.map_height*self.tile_size))
         self.level_info = []
@@ -92,17 +89,16 @@ def main():
     running = True
     tiles, tile_mapping = get_tile_images(32)
     m = MapEditor(tiles=tiles)
-    m.generate_ui()
-    m.create_level()
     while running:
         events = pg.event.get()
         for event in events:
             if event.type == pg.QUIT:
                 running = False
+            for button in m.tile_buttons:
+                button.handle_event(event)
         screen.fill(black)
-        m.update_ui()
+        m.draw(screen)
         pg.display.flip()
-    print(m.tile_clicked)
 
 main()
 pg.quit()
