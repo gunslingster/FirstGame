@@ -14,23 +14,26 @@ screen = pg.display.set_mode((width,height))
 # Setting some basic colors
 black = (0,0,0)
 white = (255,255,255)
+gray = (205,205,205)
 red = (255,0,0)
 green = (0,255,0)
 
-path = 'C:/Users/sabrahams/Desktop/pygame/FirstGame/Assets/Tiles'
-
 def get_tile_images(tile_size):
-    #tile_directory = input('Enter tile directory: ')
-    tile_directory = path
+    tile_directory = input('Enter tile directory: ')
     tile_images = []
-    tile_mapping = {}
     for tile_image in os.listdir(tile_directory):
         print(tile_image)
         tile_index = int(tile_image[-6:-4])
         tile = pg.transform.scale(pg.image.load(os.path.join(tile_directory, tile_image)), (tile_size,tile_size))
-        tile_mapping[tile_index] = tile
         tile_images.append(tile)
-    return tile_images, tile_mapping
+    return tile_images
+
+def draw_grid(surface, spacing, color):
+    for i in range(surface.get_width()):
+        pg.draw.line(surface, color, (i*spacing, 0), (i*spacing, height))
+    for i in range(surface.get_height()):
+        pg.draw.line(surface, color, (0, i*spacing), (width, i*spacing))
+
 
 class Tile():
     def __init__(self, tile_size, tile_image, pos):
@@ -56,7 +59,9 @@ class MapEditor():
     def generate_ui(self):
         self.ui_width = self.tile_size * 11
         self.ui_height = height
-        self.ui_screen = pg.Surface((width,height))
+        self.ui_screen = pg.Surface((self.ui_width,self.ui_height))
+        self.editor_screen = pg.Surface((width-self.ui_width,height))
+        self.editor_screen.fill(gray)
         self.ui_screen.fill(green)
         self.ui_screen.set_colorkey(white)
         self.tile_cols = 5
@@ -71,23 +76,31 @@ class MapEditor():
                     count += 1
                 else:
                     break
-    
+
     def draw(self, screen):
+        screen.blit(self.editor_screen, (0,0))
         screen.blit(self.ui_screen, (width-self.ui_width, 0))
+        draw_grid(self.level, self.tile_size, red)
+        self.editor_screen.blit(self.level, self.level_pos)
         for button in self.tile_buttons:
             button.draw(screen)
-    
+
     def create_level(self):
         self.level = pg.Surface((self.map_width*self.tile_size*self.map_size, self.map_height*self.tile_size))
+        self.level_rect = self.level.get_rect()
+        self.level_pos = [0,0]
         self.level_info = []
         cols = self.map_width*self.map_size
         rows = self.map_height
         for i in range(rows):
             self.level_info.append([0]*cols)
 
+    def insert_tile(self, tile, pos):
+        self.level.blit(tile, pos)
+
 def main():
     running = True
-    tiles, tile_mapping = get_tile_images(32)
+    tiles = get_tile_images(32)
     m = MapEditor(tiles=tiles)
     while running:
         events = pg.event.get()
@@ -96,6 +109,20 @@ def main():
                 running = False
             for button in m.tile_buttons:
                 button.handle_event(event)
+                if button.clicked:
+                    m.tile_clicked = button.image
+            if event.type == pg.MOUSEBUTTONDOWN:
+                mouse_pos = pg.mouse.get_pos()
+                if m.editor_screen.get_rect().collidepoint(mouse_pos):
+                    if m.tile_clicked is not None:
+                        x = (mouse_pos[0]//m.tile_size) * m.tile_size
+                        y = (mouse_pos[1]//m.tile_size) * m.tile_size
+                        m.level.blit(m.tile_clicked, (x,y))
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_LEFT:
+                   m.level_pos[0] += m.tile_size
+                if event.key == pg.K_RIGHT:
+                   m.level_pos[0] -= m.tile_size
         screen.fill(black)
         m.draw(screen)
         pg.display.flip()
