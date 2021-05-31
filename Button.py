@@ -104,7 +104,7 @@ class TextButton(Button):
             text,
             font=pg.font.SysFont(
                 None,
-                48),
+                24),
             font_color=RED,
             bg_color=GREEN,
             outline=True,

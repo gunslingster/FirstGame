@@ -2,39 +2,33 @@
 import pygame as pg
 import random
 from Settings import *
-import os
-import math
+from Button import *
+from utils import *
 vec = pg.math.Vector2
 
-def round_down(num):
-    if num < 0:
-        return math.ceil(num)
-    else:
-        return math.floor(num)
+tiles, tile_mapping, index_mapping = get_tile_images(32)
 
-class Button(pg.sprite.Sprite):
-    def __init__(self, pos=(100,100), size=(100,40), text='BUTTON', color=red, font=font1):
+class Tile(pg.sprite.Sprite):
+    def __init__(self, tile_size, tile_image, pos, tile_index):
         super().__init__()
+        self.tile_size = tile_size
+        if isinstance(tile_image, str):
+            self.image = pg.transform.scale(pg.image.load(tile_image), size)
+        else:
+            self.image = tile_image
         self.pos = pos
-        self.size = size
-        self.text = text
-        self.color = color
-        self.font = font
-        self.textsurface = font.render(text, False, color)
-        self.rect = self.textsurface.get_rect()
-        self.rect.center = self.pos
-        self.clicked = False
+        self.rect = self.image.get_rect()
+        self.rect.topleft = self.pos
 
-    def draw(self, screen):
-        screen.blit(self.textsurface, self.rect.topleft)
-
-    def events(self):
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                pg.quit()
-            if event.type == pg.MOUSEBUTTONDOWN:
-                if self.rect.collidepoint(event.pos):
-                    self.clicked = True
+def generate_level_tiles(level_csv):
+    data = csv_to_level(level_csv)
+    tiles = pg.sprite.Group()
+    for i in range(len(data)):
+        for j in range(len(data[i])):
+            if data[i][j] != 0:
+                tile = Tile(tile_size, tile_mapping[data[i][j]], (j*tile_size, i*tile_size), data[i][j])
+                tiles.add(tile)
+    return tiles
 
 class Player(pg.sprite.Sprite):
     def __init__(self, size):
@@ -133,6 +127,11 @@ class Camera():
     def update(self, target):
         x = -target.rect.x + width//2
         y = -target.rect.y + height//2
+
+        x = min(0, x)
+        y = min(0, y)
+        x = max(-(self.width - width), x)
+        y = max(-(self.height - height), y)
         self.camera = pg.Rect(x,y,self.width,self.height)
 
 class Game():
@@ -148,24 +147,17 @@ class Game():
 
     def new(self):
         self.all_sprites = pg.sprite.Group()
-        self.platforms = pg.sprite.Group()
+        self.tiles = generate_level_tiles(level01)
+        for tile in self.tiles:
+            self.all_sprites.add(tile)
         self.player = Player((30,50))
         self.all_sprites.add(self.player)
-        p1 = Platform(0, height - 40, width, 40)
-        self.all_sprites.add(p1)
-        self.platforms.add(p1)
-        p2 = Platform(width / 2 - 50, height * 3 / 4, 100, 20)
-        self.all_sprites.add(p2)
-        self.platforms.add(p2)
-        p3 = Platform(900, height-90,30,50)
-        self.all_sprites.add(p3)
-        self.platforms.add(p3)
-        self.camera = Camera(width,height)
+        self.camera = Camera(1920,height)
         self.run()
 
     def update(self):
         # Update Sprites
-        self.all_sprites.update(self.platforms)
+        self.all_sprites.update(self.tiles)
         self.camera.update(self.player)
 
         # Update background
@@ -208,19 +200,11 @@ class Game():
             self.clock.tick(fps)
 
     def start_game(self):
-        start_button = Button(text='START GAME', pos=(600,400))
-        while start_button.clicked == False:
-            self.screen.blit(self.bg, (0,0))
-            start_button.draw(self.screen)
-            start_button.events()
-            pg.display.flip()
+        self.start_button = TextButton((600,400), (100,50), 'START GAME')
+        while self.start_button.clicked == False:
+            for event in pg.event.get():
+                self.start_button.handle_event(event)
+                self.screen.blit(self.bg, (0,0))
+                self.start_button.draw(self.screen)
+                pg.display.flip()
         self.new()
-
-
-
-
-
-
-
-
-

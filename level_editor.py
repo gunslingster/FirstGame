@@ -1,8 +1,9 @@
 import pygame as pg
 import csv
-import os
-import math
 from Button import *
+from Settings import *
+from utils import *
+from Classes import Level
 vec = pg.math.Vector2
 pg.init()
 
@@ -11,7 +12,6 @@ width = 1312 # 32 * 41
 height = 640 # 32 * 20
 screen = pg.display.set_mode((width,height))
 clock = pg.time.Clock()
-path = '/home/gunslingster/Desktop/python_projects/pygame_projects/FirstGame/Assets/Tiles'
 
 # Setting some basic colors
 black = (0,0,0)
@@ -20,53 +20,7 @@ gray = (205,205,205)
 red = (255,0,0)
 green = (0,255,0)
 
-def get_tile_images(tile_size):
-    #tile_directory = input('Enter tile directory: ')
-    tile_directory = path
-    tile_images = []
-    tile_mapping = {}
-    for tile_image in os.listdir(tile_directory):
-        tile_index = int(tile_image[-6:-4])
-        tile = pg.transform.scale(pg.image.load(os.path.join(tile_directory, tile_image)), (tile_size,tile_size))
-        tile_images.append(tile)
-        tile_mapping[tile_index] = tile
-    blank = pg.Surface((tile_size, tile_size))
-    tile_images.append(blank)
-    tile_mapping[0] = blank
-    index_mapping = {v:k for k,v in tile_mapping.items()}
-    return tile_images, tile_mapping, index_mapping
-
 tiles, tile_mapping, index_mapping = get_tile_images(32)
-
-def draw_grid(surface, spacing=32, color=red):
-    for i in range(surface.get_width()):
-        pg.draw.line(surface, color, (i*spacing, 0), (i*spacing, height))
-    for i in range(surface.get_height()):
-        pg.draw.line(surface, color, (0, i*spacing), (width, i*spacing))
-
-
-class Tile(pg.sprite.Sprite):
-    def __init__(self, tile_size, tile_image, pos, tile_index):
-        super().__init__()
-        self.tile_size = tile_size
-        if isinstance(tile_image, str):
-            self.image = pg.transform.scale(pg.image.load(tile_image), size)
-        else:
-            self.image = tile_image
-        self.pos = pos
-        self.rect = self.image.get_rect()
-        self.rect.topleft = self.pos
-
-def level_to_csv(level, level_name):
-    with open(level_name + '.csv', 'w') as f:
-        w = csv.writer(f)
-        w.writerows(level)
-
-def csv_to_level(csv_file):
-    with open(csv_file, newline='') as f:
-        reader = csv.reader(f)
-        data = list(reader)
-    return data
 
 class Level():
     def __init__(self, level_width=960, level_height=640, tile_size=32, level_data=None):
@@ -80,6 +34,8 @@ class Level():
             self.level_height = level_height
             self.data = [[0]*(self.level_width//tile_size) for i in range(self.level_height//tile_size)]
         self.image = pg.Surface((level_width, level_height))
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (0,0)
 
     def add_tile(self, tile_index, index):
         self.data[index[1]][index[0]] = tile_index
@@ -134,7 +90,7 @@ class MapEditor():
         screen.blit(self.ui_screen, (960,0))
         self.level.draw()
         screen.blit(self.bg, (0,0))
-        self.editor_screen.blit(self.level.image, (0,0))
+        self.editor_screen.blit(self.level.image, self.level.rect)
         screen.blit(self.editor_screen, (0,0))
         for button in self.tile_buttons:
             button.draw(screen)
@@ -154,18 +110,26 @@ class MapEditor():
                 self.running = False
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_RIGHT:
-                    scroll += 1
+                    if self.level.rect.right <= self.editor_screen.get_width():
+                        pass
+                    else:
+                        self.scroll += 1
+                        self.level.rect.left -= 1*self.tile_size
                 if event.key == pg.K_LEFT:
-                    scroll -= 1
+                    if self.level.rect.left + 1 > 0:
+                        pass
+                    else:
+                        self.scroll -= 1
+                        self.level.rect.left += 1*self.tile_size
             if event.type == pg.MOUSEBUTTONDOWN:
                 if self.editor_screen.get_rect().collidepoint(event.pos):
                     if self.tile_clicked is not None:
-                        tile_pos = (event.pos[0]//self.tile_size, event.pos[1]//self.tile_size)
+                        tile_pos = (event.pos[0]//self.tile_size + self.scroll, event.pos[1]//self.tile_size)
                         self.level.add_tile(index_mapping[self.tile_clicked], tile_pos)
             if event.type == pg.MOUSEMOTION and pg.mouse.get_pressed()[0]:
                 if self.editor_screen.get_rect().collidepoint(event.pos):
                     if self.tile_clicked is not None:
-                        tile_pos = (event.pos[0]//self.tile_size, event.pos[1]//self.tile_size)
+                        tile_pos = (event.pos[0]//self.tile_size + self.scroll, event.pos[1]//self.tile_size)
                         self.level.add_tile(index_mapping[self.tile_clicked], tile_pos)
             for button in self.tile_buttons:
                 button.handle_event(event)
