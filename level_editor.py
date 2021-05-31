@@ -7,9 +7,11 @@ vec = pg.math.Vector2
 pg.init()
 
 # Setting up the window
-width = 1280
-height = 640
+width = 1312 # 32 * 41
+height = 640 # 32 * 20
 screen = pg.display.set_mode((width,height))
+clock = pg.time.Clock()
+path = '/home/gunslingster/Desktop/python_projects/pygame_projects/FirstGame/Assets/Tiles'
 
 # Setting some basic colors
 black = (0,0,0)
@@ -19,113 +21,177 @@ red = (255,0,0)
 green = (0,255,0)
 
 def get_tile_images(tile_size):
-    tile_directory = input('Enter tile directory: ')
+    #tile_directory = input('Enter tile directory: ')
+    tile_directory = path
     tile_images = []
+    tile_mapping = {}
     for tile_image in os.listdir(tile_directory):
-        print(tile_image)
         tile_index = int(tile_image[-6:-4])
         tile = pg.transform.scale(pg.image.load(os.path.join(tile_directory, tile_image)), (tile_size,tile_size))
         tile_images.append(tile)
-    return tile_images
+        tile_mapping[tile_index] = tile
+    blank = pg.Surface((tile_size, tile_size))
+    tile_images.append(blank)
+    tile_mapping[0] = blank
+    index_mapping = {v:k for k,v in tile_mapping.items()}
+    return tile_images, tile_mapping, index_mapping
 
-def draw_grid(surface, spacing, color):
+tiles, tile_mapping, index_mapping = get_tile_images(32)
+
+def draw_grid(surface, spacing=32, color=red):
     for i in range(surface.get_width()):
         pg.draw.line(surface, color, (i*spacing, 0), (i*spacing, height))
     for i in range(surface.get_height()):
         pg.draw.line(surface, color, (0, i*spacing), (width, i*spacing))
 
 
-class Tile():
-    def __init__(self, tile_size, tile_image, pos):
+class Tile(pg.sprite.Sprite):
+    def __init__(self, tile_size, tile_image, pos, tile_index):
+        super().__init__()
         self.tile_size = tile_size
-        self.image = tile_image
-        self.tile_pos = pos
-        self.real_pos = (pos[0]*self.tile_size, pos[1]*tile_size)
+        if isinstance(tile_image, str):
+            self.image = pg.transform.scale(pg.image.load(tile_image), size)
+        else:
+            self.image = tile_image
+        self.pos = pos
         self.rect = self.image.get_rect()
-        self.rect.topleft = self.real_pos
+        self.rect.topleft = self.pos
+
+def level_to_csv(level, level_name):
+    with open(level_name + '.csv', 'w') as f:
+        w = csv.writer(f)
+        w.writerows(level)
+
+def csv_to_level(csv_file):
+    with open(csv_file, newline='') as f:
+        reader = csv.reader(f)
+        data = list(reader)
+    return data
+
+class Level():
+    def __init__(self, level_width=960, level_height=640, tile_size=32, level_data=None):
+        self.tile_size = tile_size
+        if level_data is not None:
+            self.level_width = len(level_data[0])
+            self.level_height = len(level_data)
+            self.data = level_data
+        else:
+            self.level_width = level_width
+            self.level_height = level_height
+            self.data = [[0]*(self.level_width//tile_size) for i in range(self.level_height//tile_size)]
+        self.image = pg.Surface((level_width, level_height))
+
+    def add_tile(self, tile_index, index):
+        self.data[index[1]][index[0]] = tile_index
+
+    def del_tile(self, index):
+        self.data[index[1]][index[0]] = 0
+
+    def draw(self):
+        for i in range(self.level_height//self.tile_size):
+            for j in range(self.level_width//self.tile_size):
+                self.image.blit(tile_mapping[self.data[i][j]], (j*self.tile_size, i*self.tile_size))
+        draw_grid(self.image)
+
+
 
 class MapEditor():
-    def __init__(self, map_width=30, map_height=20, map_size = 3, tile_size=32, tiles=None, bg=None):
-        self.map_width = map_width
-        self.map_height = map_height
-        self.map_size = map_size
-        self.tile_size = tile_size
+    def __init__(self, tiles):
+        self.running = True
         self.tiles = tiles
-        self.bg = pg.transform.scale
-        self.generate_ui()
-        self.create_level()
-        self.tile_clicked = None
+        self.tile_size = self.tiles[0].get_width()
+        self.bg = pg.transform.scale(pg.image.load('Background.png'), (960, 640))
+        self.setup()
+        self.new_level()
 
-    def generate_ui(self):
-        self.ui_width = self.tile_size * 11
-        self.ui_height = height
-        self.ui_screen = pg.Surface((self.ui_width,self.ui_height))
-        self.editor_screen = pg.Surface((width-self.ui_width,height))
-        self.editor_screen.fill(gray)
-        self.ui_screen.fill(green)
-        self.ui_screen.set_colorkey(white)
-        self.tile_cols = 5
-        self.tile_rows = math.ceil(len(self.tiles)/5)
+    def setup(self):
+        # There will be two screens
+        # One screen is for the ui with all the butoons
+        # The other screen is to add tiles and edit the map
+        self.ui_screen = pg.Surface((352, 640))
+        self.ui_screen.fill(LIGHTGRAY)
+        self.editor_screen = pg.Surface((960, 640))
         self.tile_buttons = []
+        self.tile_clicked = None
+        self.tile_index = 0
+        self.scroll = 0
+        # Will have 5 tiles per row
+        rows = len(self.tiles)//5 + 1
         count = 0
-        for i in range(self.tile_rows):
+        for i in range(rows+1):
             for j in range(1,11,2):
                 if count < len(self.tiles):
-                    tile_button = ImageButton((width-self.ui_width+j*self.tile_size,i*self.tile_size), (self.tile_size, self.tile_size), self.tiles[count])
+                    tile_button = ImageButton((960+j*self.tile_size,i*self.tile_size), (self.tile_size,self.tile_size), self.tiles[count])
                     self.tile_buttons.append(tile_button)
                     count += 1
                 else:
                     break
+        self.save_button = TextButton((960+3*self.tile_size, 13*self.tile_size), (5*self.tile_size, 1*self.tile_size), 'SAVE LEVEL')
+        self.load_button = TextButton((960+3*self.tile_size, 15*self.tile_size), (5*self.tile_size, 1*self.tile_size), 'LOAD LEVEL')
+        self.new_button = TextButton((960+3*self.tile_size, 17*self.tile_size), (5*self.tile_size, 1*self.tile_size), 'NEW LEVEL')
 
-    def draw(self, screen):
+    def draw(self):
+        screen.blit(self.ui_screen, (960,0))
+        self.level.draw()
+        screen.blit(self.bg, (0,0))
+        self.editor_screen.blit(self.level.image, (0,0))
         screen.blit(self.editor_screen, (0,0))
-        screen.blit(self.ui_screen, (width-self.ui_width, 0))
-        draw_grid(self.level, self.tile_size, red)
-        self.editor_screen.blit(self.level, self.level_pos)
         for button in self.tile_buttons:
             button.draw(screen)
+        self.save_button.draw(screen)
+        self.load_button.draw(screen)
+        self.new_button.draw(screen)
 
-    def create_level(self):
-        self.level = pg.Surface((self.map_width*self.tile_size*self.map_size, self.map_height*self.tile_size))
-        self.level_rect = self.level.get_rect()
-        self.level_pos = [0,0]
-        self.level_info = []
-        cols = self.map_width*self.map_size
-        rows = self.map_height
-        for i in range(rows):
-            self.level_info.append([0]*cols)
+    def new_level(self):
+        level_width = int(input('Enter level width: '))
+        level_height =int(input('Enter level height: '))
+        self.level = Level(level_width, level_height, self.tile_size)
 
-    def insert_tile(self, tile, pos):
-        self.level.blit(tile, pos)
-
-def main():
-    running = True
-    tiles = get_tile_images(32)
-    m = MapEditor(tiles=tiles)
-    while running:
+    def events(self):
         events = pg.event.get()
         for event in events:
             if event.type == pg.QUIT:
-                running = False
-            for button in m.tile_buttons:
+                self.running = False
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_RIGHT:
+                    scroll += 1
+                if event.key == pg.K_LEFT:
+                    scroll -= 1
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if self.editor_screen.get_rect().collidepoint(event.pos):
+                    if self.tile_clicked is not None:
+                        tile_pos = (event.pos[0]//self.tile_size, event.pos[1]//self.tile_size)
+                        self.level.add_tile(index_mapping[self.tile_clicked], tile_pos)
+            if event.type == pg.MOUSEMOTION and pg.mouse.get_pressed()[0]:
+                if self.editor_screen.get_rect().collidepoint(event.pos):
+                    if self.tile_clicked is not None:
+                        tile_pos = (event.pos[0]//self.tile_size, event.pos[1]//self.tile_size)
+                        self.level.add_tile(index_mapping[self.tile_clicked], tile_pos)
+            for button in self.tile_buttons:
                 button.handle_event(event)
                 if button.clicked:
-                    m.tile_clicked = button.image
-            if event.type == pg.MOUSEBUTTONDOWN:
-                mouse_pos = pg.mouse.get_pos()
-                if m.editor_screen.get_rect().collidepoint(mouse_pos):
-                    if m.tile_clicked is not None:
-                        x = (mouse_pos[0]//m.tile_size) * m.tile_size
-                        y = (mouse_pos[1]//m.tile_size) * m.tile_size
-                        m.level.blit(m.tile_clicked, (x,y))
-            if event.type == pg.KEYDOWN:
-                if event.key == pg.K_LEFT:
-                   m.level_pos[0] += m.tile_size
-                if event.key == pg.K_RIGHT:
-                   m.level_pos[0] -= m.tile_size
-        screen.fill(black)
-        m.draw(screen)
-        pg.display.flip()
+                    self.tile_clicked = button.image
+            self.save_button.handle_event(event)
+            self.load_button.handle_event(event)
+            self.new_button.handle_event(event)
+            if self.save_button.clicked:
+                level_name = input('Enter level name: ')
+                level_to_csv(self.level.data, level_name)
+                self.running = False
+            if self.load_button.clicked:
+                pass
+            if self.new_button.clicked:
+                self.new_level()
+                draw_grid(self.curr_level)
 
-main()
+
+
+def test():
+    m = MapEditor(tiles)
+    while m.running:
+            m.events()
+            m.draw()
+            pg.display.flip()
+            clock.tick(30)
+test()
 pg.quit()
