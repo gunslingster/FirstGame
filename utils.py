@@ -17,7 +17,6 @@ def csv_to_level(csv_file):
         reader = csv.reader(f)
         data = list(reader)
         data = [list(map(int ,row)) for row in data]
-        print(data)
     return data
 
 def draw_grid(surface, spacing=32, color=red):

@@ -3,7 +3,6 @@ import csv
 from Button import *
 from Settings import *
 from utils import *
-from Classes import Level
 vec = pg.math.Vector2
 pg.init()
 
@@ -143,19 +142,22 @@ class MapEditor():
                 level_to_csv(self.level.data, level_name)
                 self.running = False
             if self.load_button.clicked:
-                pass
+                level_directory = input('Enter csv directory: ')
+                data = csv_to_level(level_directory)
+                self.level = Level(level_data=data)
+                self.load_button.clicked = False
             if self.new_button.clicked:
                 self.new_level()
-                draw_grid(self.curr_level)
+                self.new_button.clicked = False
 
 
 
 def test():
     m = MapEditor(tiles)
     while m.running:
-            m.events()
-            m.draw()
-            pg.display.flip()
-            clock.tick(30)
+        m.events()
+        m.draw()
+        pg.display.flip()
+        clock.tick(30)
 test()
 pg.quit()

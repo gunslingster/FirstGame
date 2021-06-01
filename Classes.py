@@ -4,6 +4,7 @@ import random
 from Settings import *
 from Button import *
 from utils import *
+import os
 vec = pg.math.Vector2
 
 tiles, tile_mapping, index_mapping = get_tile_images(32)
@@ -144,15 +145,19 @@ class Game():
         self.bgx = 0
         self.bgx2 = self.bg.get_width()
         self.running = True
+        self.level = 1
 
     def new(self):
         self.all_sprites = pg.sprite.Group()
-        self.tiles = generate_level_tiles(level01)
+        for level in os.listdir(os.path.join(project_path, 'Levels')):
+            if int(level[5:7]) == self.level:
+                self.tiles = generate_level_tiles(os.path.join(project_path, 'Levels/'+level))
         for tile in self.tiles:
             self.all_sprites.add(tile)
+        self.tile_size = 32
         self.player = Player((30,50))
         self.all_sprites.add(self.player)
-        self.camera = Camera(1920,height)
+        self.camera = Camera(len(self.tiles[0])*self.tile_size, len(self.tiles)*self.tile_size)
         self.run()
 
     def update(self):
@@ -200,7 +205,7 @@ class Game():
             self.clock.tick(fps)
 
     def start_game(self):
-        self.start_button = TextButton((600,400), (100,50), 'START GAME')
+        self.start_button = TextButton((width//2,height//2), (100,50), 'START GAME')
         while self.start_button.clicked == False:
             for event in pg.event.get():
                 self.start_button.handle_event(event)
