@@ -23,13 +23,15 @@ class Tile(pg.sprite.Sprite):
 
 def generate_level_tiles(level_csv):
     data = csv_to_level(level_csv)
+    level_width = len(data[0]) * tile_size
+    level_height = len(data) * tile_size
     tiles = pg.sprite.Group()
     for i in range(len(data)):
         for j in range(len(data[i])):
             if data[i][j] != 0:
                 tile = Tile(tile_size, tile_mapping[data[i][j]], (j*tile_size, i*tile_size), data[i][j])
                 tiles.add(tile)
-    return tiles
+    return tiles, level_width, level_height
 
 class Player(pg.sprite.Sprite):
     def __init__(self, size):
@@ -151,13 +153,13 @@ class Game():
         self.all_sprites = pg.sprite.Group()
         for level in os.listdir(os.path.join(project_path, 'Levels')):
             if int(level[5:7]) == self.level:
-                self.tiles = generate_level_tiles(os.path.join(project_path, 'Levels/'+level))
+                self.tiles, self.level_width, self.level_height = generate_level_tiles(os.path.join(project_path, 'Levels/'+level))
         for tile in self.tiles:
             self.all_sprites.add(tile)
         self.tile_size = 32
         self.player = Player((30,50))
         self.all_sprites.add(self.player)
-        self.camera = Camera(len(self.tiles[0])*self.tile_size, len(self.tiles)*self.tile_size)
+        self.camera = Camera(self.level_width, self.level_height)
         self.run()
 
     def update(self):

@@ -25,14 +25,14 @@ class Level():
     def __init__(self, level_width=960, level_height=640, tile_size=32, level_data=None):
         self.tile_size = tile_size
         if level_data is not None:
-            self.level_width = len(level_data[0])
-            self.level_height = len(level_data)
+            self.level_width = len(level_data[0])*self.tile_size
+            self.level_height = len(level_data)*self.tile_size
             self.data = level_data
         else:
             self.level_width = level_width
             self.level_height = level_height
             self.data = [[0]*(self.level_width//tile_size) for i in range(self.level_height//tile_size)]
-        self.image = pg.Surface((level_width, level_height))
+        self.image = pg.Surface((self.level_width, self.level_height))
         self.rect = self.image.get_rect()
         self.rect.topleft = (0,0)
 
@@ -57,7 +57,7 @@ class MapEditor():
         self.tile_size = self.tiles[0].get_width()
         self.bg = pg.transform.scale(pg.image.load('Background.png'), (960, 640))
         self.setup()
-        self.new_level()
+        self.level = Level()
 
     def setup(self):
         # There will be two screens
@@ -88,7 +88,6 @@ class MapEditor():
     def draw(self):
         screen.blit(self.ui_screen, (960,0))
         self.level.draw()
-        screen.blit(self.bg, (0,0))
         self.editor_screen.blit(self.level.image, self.level.rect)
         screen.blit(self.editor_screen, (0,0))
         for button in self.tile_buttons:

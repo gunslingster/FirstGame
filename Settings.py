@@ -2,13 +2,13 @@
 # Game settings
 from pygame import font
 font.init()
+import os
 
 title = "Platformer"
 width = 960
 height = 640
 fps = 60
-project_path = '/home/gunslingster/Desktop/python_projects/pygame_projects/FirstGame'
-level01 = 'level01.csv'
+project_path = os.path.dirname(os.path.realpath(__file__))
 
 
 # define colors and fonts
