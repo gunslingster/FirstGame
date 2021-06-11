@@ -104,11 +104,53 @@ class Player(pg.sprite.Sprite):
                     self.rect.bottom = self.pos.y
         updatex()
         updatey()
-
+        
     def display_position(self):
         textsurface = font1.render('Position: ' + str(int(self.pos.x)) + ',' + str(int(self.pos.y)), False, (0, 0, 0))
-        return textsurface
+        return textsurface 
 
+        
+class Enemy(pg.sprite.Sprite):
+    def __init__(self, image=None, size=(50,50), pos=(800,500)):
+        super().__init__()
+        if image:
+            self.image = pg.tansform.scale(pg.image.load(image), size)
+        else:
+            self.image = pg.Surface(size)
+            self.image.fill(red)
+        self.rect= self.image.get_rect()
+        self.rect.topleft = pos
+        self.size = size
+        self.pos = vec(pos)
+        self.counter = 0
+        
+    def movement(self):
+        pass
+    
+    def attack(self, target):
+        pass
+    
+    def update(self):
+        pass
+    
+class Monster(Enemy):
+    def __init__(self):
+        super().__init__()
+        self.vel = vec(5,0)
+        
+    def movement(self):
+        d = 20
+        if self.counter >= 0 and self.counter <= d:
+            self.rect.x += self.vel.x
+        elif self.counter > d and self.counter <= 2*d:
+            self.rect.x -= self.vel.x
+        else:
+            self.counter = 0
+        self.counter += 1
+    
+    def update(self):
+        self.movement()
+        
 class Platform(pg.sprite.Sprite):
     def __init__(self, x, y, w, h):
         pg.sprite.Sprite.__init__(self)
@@ -159,12 +201,16 @@ class Game():
         self.tile_size = 32
         self.player = Player((30,50))
         self.all_sprites.add(self.player)
+        self.enemies = pg.sprite.Group()
+        monster = Monster()
+        self.enemies.add(monster)
         self.camera = Camera(self.level_width, self.level_height)
         self.run()
 
     def update(self):
         # Update Sprites
         self.all_sprites.update(self.tiles)
+        self.enemies.update()
         self.camera.update(self.player)
 
         # Update background
@@ -195,6 +241,8 @@ class Game():
         self.screen.blit(self.bg, (self.bgx2, 0))  # draws the seconf bg image
         for sprite in self.all_sprites:
             self.screen.blit(sprite.image, self.camera.apply(sprite))
+        for enemy in self.enemies:
+            self.screen.blit(enemy.image, self.camera.apply(enemy))
         self.screen.blit(self.player.display_position(), (0,0))
         pg.display.flip()
 
